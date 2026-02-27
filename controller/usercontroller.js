@@ -6,6 +6,9 @@ const {sendOtpEmail} = require("../utils/emailserivce");
 const STATUSCODES = require('../constant/statuscode');
 const NotificationService = require("../services/notificationservice");
 const successResponse = require("../utils/successresponse");
+const {jwtSign} = require('../utils/jwts');
+const fundingService = require("../services/fundingService");
+
 
 
 
@@ -15,7 +18,7 @@ const authController = {
   register: async (req, res)=>{
         const {fullName, email, password, phoneNumber, userType} = req.body;
 
-        
+        const profilePic = req.file ? req.file.path : null;
 
         const result = registerUserSchema.safeParse(req.body);
         if (!result.success) {
@@ -35,6 +38,7 @@ const authController = {
         const user = await userService.createUser({
             fullName,
             email: email,
+            profilePic:profilePic,
             password: hashed,
             phoneNumber:phoneNumber,
             otp,
@@ -46,8 +50,12 @@ const authController = {
         if (!user) {
             return res.status(500).json({ message: "User registration failed" });
         }else{
+          const token = jwtSign({
+            userId: user.id,
+            email: user.email
+          });
 
-          successResponse(res, user, "User registered successfully. Please check your email for the OTP to verify your account.", STATUSCODES.CREATED);
+          successResponse(res, {token, user}, "User registered successfully. Please check your email for the OTP to verify your account.", STATUSCODES.CREATED);
 
         }
 
@@ -63,7 +71,7 @@ const authController = {
      const { email, otp } = req.body;
   
     let user;
-    let proof = [];
+    
 
     if (!email || !otp) {
       return res.status(400).json({ message: "Email and OTP are required" });
@@ -97,10 +105,19 @@ const authController = {
     }
 
     const updateOtp = await userService.updateUser(user._id, {
-      otp: undefined,
-      otpExpiresAt: undefined,
-      isVerified: true,
-    });
+          $unset: {
+            otp: "",
+            otpExpiresAt: "",
+          },
+          isVerified: true,
+          online: true
+        });
+
+    // const updateOtp = await userService.updateUser(user._id, {
+    //   otp: undefined,
+    //   otpExpiresAt: undefined,
+    //   isVerified: true,
+    // });
 
         const userResponse = {
       _id: user._id,
@@ -114,26 +131,14 @@ const authController = {
       updatedAt: user.updatedAt,
     };
 
-       res.redirect('/login')
-    // if(user.userType === "House Owners"){
-    //     res.render('house_owner_dash/dashboard',{user, proof})
-    //     //console.log("welcome house owner")
-    // }else if(user.userType === "Users"){
-    //   res.render('dashboard/dashboard', {user, proof})
-    //   //console.log("welcome users")
-    // }else{
-    //   console.log("falsify")
-    // }
-
+       return successResponse(res, userResponse, "OTP verified successfully", STATUSCODES.SUCCESS);
 
 
   },
 
  login: async (req, res) => {
   const { email, password } = req.body;
-  console.log("Email:", email, "Password:", password);
 
-  let proof = [];
 
   if (!email || !password) {
     return res.status(400).json({ status: "failed", message: "Email and password are required" });
@@ -150,10 +155,10 @@ const authController = {
     return res.status(404).json({ status: "failed", message: "User with this email does not exist" });
   }
 
-  // const isPasswordValid = await comparePasswords(password, user.password);
-  // if (!isPasswordValid) {
-  //   return res.status(401).json({ status: "failed", message: "Invalid password" });
-  // }
+  const isPasswordValid = await comparePasswords(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({ status: "failed", message: "Invalid password" });
+  }
 
   const userResponse = {
     _id: user._id,
@@ -165,25 +170,77 @@ const authController = {
     updatedAt: user.updatedAt,
   };
 
-  // Render based on userType
-  if (user.userType === "House Owners") {
-    return res.render("house_owner_dash/dashboard", { user: userResponse, proof });
-  } else if (user.userType === "Users") {
-    return res.render("dashboard/dashboard", { user: userResponse, proof });
-  } else {
-    console.log("Invalid userType:", user.userType);
-    return res.status(400).json({ status: "failed", message: "Unknown user type" });
-  }
+  const token = jwtSign({
+    userId: user._id,
+    email: user.email
+  });
+
+  return successResponse(res, { token, user: userResponse }, "Login successful", STATUSCODES.SUCCESS);
+ 
 },
 
 
   getUserProfile: async (req, res) => {
-    const userId = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
     const user = await userService.getUserById(userId);
 
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
 
+    const userResponse = {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      profilePic: user.profilePic,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    return successResponse(res, userResponse, "User profile retrieved successfully", STATUSCODES.SUCCESS);
   },
 
+  getWalletBalance: async (req, res) => {
+    const userId = req.user.userId;
+    const user = await userService.getUserById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+
+    
+
+    return successResponse(res, { balance: user.walletBalance }, "Wallet balance retrieved successfully", STATUSCODES.SUCCESS);
+  },
+
+ fundWalletManual:async (req, res) => {
+  try {
+    const { amount, bankName, senderName, narration } = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+    console.log("User ID from auth middleware:", userId);
+
+    const funding = await fundingService.createFundingRequest({
+      userId: req.user.userId, // from auth middleware
+      amount,
+      bankName,
+      senderName,
+      narration,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Funding request submitted successfully",
+      data: funding,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 
  
 }

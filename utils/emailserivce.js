@@ -119,7 +119,7 @@ const sendOtpEmail = async (email, otp) => {
   <body>
     <div class="email-container">
       <div class="header">
-        <img src="" alt="${APP_NAME} Logo" />
+        <img src="https://res.cloudinary.com/damufjozr/image/upload/v1725521798/ck4g8mgwfmkcvajr58ki.png" alt="${APP_NAME} Logo" />
         <h2>Verify Your Email</h2>
       </div>
       <div class="content">
