@@ -53,6 +53,23 @@ static async verifyPayment(req, res) {
   }
 
 
+  static async getTransactions(req, res) {
+    try {
+      const {userId} = req.body;
+      const transactions = await PaystackService.getAllTransactions(userId);
+      return res.status(200).json({
+        message: "Transactions retrieved successfully",
+        data: transactions,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: error.response?.data || error.message,
+      });
+  }
+
+  }
+
+
 }
 
 module.exports = WalletController;

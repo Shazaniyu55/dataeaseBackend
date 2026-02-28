@@ -8,4 +8,5 @@ const walletRouter = express.Router();
 
 walletRouter.post('/fund-wallet',authMiddleware, errorHandler(walletController.fundWallet));
 walletRouter.get('/verify-payment/:reference', authMiddleware, errorHandler(walletController.verifyPayment));
+walletRouter.post('/transactions', authMiddleware, errorHandler(walletController.getTransactions));
 module.exports = walletRouter;

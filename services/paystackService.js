@@ -86,6 +86,15 @@ class PaystackService {
       throw error;
     }
   }
+
+  static async getAllTransactions(userId) {
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      throw new Error("Wallet not found");
+    }
+    return wallet.transactions;
+  }
+
 }
 
 module.exports = PaystackService;
