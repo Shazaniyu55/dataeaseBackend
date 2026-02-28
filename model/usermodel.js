@@ -63,10 +63,70 @@ const UserSchema = new Schema(
       type: String,
       
     },
-     isVerifiedHouseOwner: {
-      type: Boolean,
-      default: false,
+    referralToken: {
+        type: String,
+        default: null,
     },
+    referralTokenExpiry: {
+        type: Date,
+        default: null,
+    },
+    resetToken: {
+        type: String,
+        default: null
+    },
+    resetTokenExpiry: {
+        type: Date,
+        default: null
+    },
+    referralCount: { 
+        type: Number, 
+        default: 0 
+    },
+    referredUsers: [{
+        _id: mongoose.Schema.Types.ObjectId,
+        fullname: String,
+        email: String,
+        image: String,
+        referredUsers: [{
+            _id: mongoose.Schema.Types.ObjectId,
+            fullname: String,
+            email: String,
+            image: String
+        }]
+    }],
+
+    referredBy: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    },
+
+    referralTier: {
+        type: Number,
+        default: 1,
+        set: (value) => {
+            // Convert non-numeric values to a default number
+            if (isNaN(value)) return 1; // or any default value
+            return Number(value);
+        }
+    },
+    commissions: {
+        type: Number,
+        default: 0
+    },
+    points: [{
+        packageAmount: Number,
+        points: Number
+    }],
+
+    payments: [{ 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Payment' 
+    }]
+
+
+
+
     
     
   },

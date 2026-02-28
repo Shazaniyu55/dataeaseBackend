@@ -2,6 +2,12 @@
 const mongoose = require("mongoose");
 
 const transactionSchema = new mongoose.Schema({
+  reference: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  
   type: {
     type: String,
     enum: ["airtime", "data", "cable", "electricity", "betting", "other"],
@@ -39,5 +45,16 @@ walletSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
 });
+
+
+// Helper method to add a new transaction
+walletSchema.methods.addTransaction = async function (reference, amount, status) {
+  this.transactions.push({ reference, amount, status });
+  if (status === "success") {
+    this.balance += amount;
+  }
+  await this.save();
+  return this;
+};
 
 module.exports = mongoose.model("Wallet", walletSchema);

@@ -25,6 +25,7 @@ app.use(cors(
 ));
 app.use(morgan('tiny'));
 app.use(express.json({limit: '10kb'}));
+app.use('/api/v2', indexRouter);
 app.use(bodyParser.json());
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(sanitizeInput);
@@ -36,7 +37,7 @@ const limit = rateLimit({
 
 app.use('/api',limit);
 app.use(Logger.logRequest);
-app.use('/api/v2', indexRouter);
+
 
 app.get('/', (req, res) => {
   res.send('Welcome to DATA EASE  API SERVER');

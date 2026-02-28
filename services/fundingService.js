@@ -1,5 +1,7 @@
 const FundingRequest = require("../model/fundingRequest");
 const Wallet = require("../model/walletmodel");
+const axios = require("axios");
+require("dotenv").config();
 
 const createFundingRequest = async (data) => {
   return await FundingRequest.create(data);
@@ -42,6 +44,11 @@ const approveFundingRequest = async (requestId, adminId) => {
     throw error;
   }
 };
+
+
+
+
+
 
 module.exports = {
   createFundingRequest,
