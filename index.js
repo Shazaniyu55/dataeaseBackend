@@ -21,7 +21,7 @@ connectDB();
 app.use(helmet());
 
 app.use(cors(
-    {origin: "*", methods: ['GET, POST, PUT, DELETE'], allowedHeaders:'Content-Type,Authorization'}
+    {origin: "https://data-ease-web.vercel.app", methods: ['GET','POST','PUT','DELETE'], credentials:true, allowedHeaders: ['Content-Type','Authorization']}
 ));
 app.use(morgan('tiny'));
 app.use(express.json({limit: '10kb'}));
