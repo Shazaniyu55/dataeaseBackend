@@ -1,0 +1,24 @@
+// utils/calculateProfit.js
+const pricing = require("../config/price.config");
+
+function calculateAirtimePricing(service, amount) {
+  const discountPercent = pricing.airtime[service.toLowerCase()];
+
+  if (!discountPercent) {
+    throw new Error("Invalid service type");
+  }
+
+  const discountAmount = (discountPercent / 100) * amount;
+  const costPrice = amount - discountAmount;
+  const sellingPrice = amount; // Sell at face value
+  const profit = sellingPrice - costPrice;
+
+  return {
+    sellingPrice,
+    costPrice,
+    profit,
+    discountPercent
+  };
+}
+
+module.exports = { calculateAirtimePricing };

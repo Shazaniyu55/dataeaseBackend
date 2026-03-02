@@ -15,6 +15,10 @@ authRouter.post('/generate-token',authMiddleware, errorHandler(authController.ge
 authRouter.post('/request-password-reset', errorHandler(authController.requestPasswordReset));
 authRouter.post('/reset-password', errorHandler(authController.resetPassword));
 authRouter.post('/profile', authMiddleware, errorHandler(authController.getUser));
+authRouter.post('/buy-airtime', authMiddleware,  errorHandler(authController.buyAirtime));
+authRouter.get('/data-variations', authMiddleware, errorHandler(authController.getDataVariations));
+authRouter.get('/balance', authMiddleware, errorHandler(authController.getUserWalletBalance));
+
 
 
 module.exports = authRouter;

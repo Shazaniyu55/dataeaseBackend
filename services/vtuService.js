@@ -48,8 +48,11 @@ getBalance: async (token) => {
     }
 },
 
-purchaseAirtime: async (token, payload) => {
+purchaseAirtime: async ( payload) => {
   try {
+    const tokenResponse = await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    console.log("Generated VTU Token:", token);
     const response = await vtuConfig.vtuApi.post(
       "/api/v2/airtime",
       payload,
@@ -75,11 +78,17 @@ purchaseAirtime: async (token, payload) => {
 },
 
 
-DataVariations: async (token, payload) => {
+DataVariations: async ( servieId) => {
   try {
+    const tokenResponse = await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    console.log("Generated VTU Token:", token);
     const response = await vtuConfig.vtuApi.get(
-      "/api/v2/variations/data",
-      payload,{
+      `/api/v2/variations/data?service_id=${servieId}`,
+      {
+        params: {
+          service_id: servieId,
+        },
         headers: {
 
             Authorization: `Bearer ${token}`,
