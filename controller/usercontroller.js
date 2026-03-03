@@ -12,7 +12,7 @@ const {sendForgotPasswordEmail} = require("../utils/emailserivce")
 const crypto = require("crypto");
 const dotenv = require("dotenv");
 const vtuService = require("../services/vtuService");
-const {calculateAirtimePricing} =  require("../utils/calculateProfit");
+const {calculateAirtimePricing, calculateElectricPricing} =  require("../utils/calculateProfit");
 const Wallet = require("../model/walletmodel");
 
 dotenv.config();
@@ -653,6 +653,201 @@ buyData: async (req, res) => {
   } 
 
 },
+
+
+verifyelectricCustomer: async (req, res) => {
+  try {
+    const {customer_id, variation_id, service_id } = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+
+    if (!customer_id || !variation_id  || !service_id) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+    
+
+
+    const payload = {
+      variation_id,
+      service_id,
+      customer_id
+    };
+
+    const response = await vtuService.verifycustomerElectricity(payload);
+    
+    if (response.code === "success") {
+     
+      successResponse(res, response.data, "customer verified successful", STATUSCODES.SUCCESS);
+    } else {
+     
+      res.status(400).json({ status: "failed", message: response.message });
+    }
+  } catch (error) {
+    console.error("Error purchasing airtime:", error);
+    res.status(500).json({ status: "failed", message: error.message });
+  } 
+
+},
+
+verifybettingCustomer: async (req, res) => {
+  try {
+    const {customer_id, service_id } = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+
+    if (!customer_id   || !service_id) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+    
+
+
+    const payload = {
+      service_id,
+      customer_id
+    };
+
+    const response = await vtuService.verifybetting(payload);
+    
+    if (response.code === "success") {
+     
+      successResponse(res, response.data, "customer verified successful", STATUSCODES.SUCCESS);
+    } else {
+     
+      res.status(400).json({ status: "failed", message: response.message });
+    }
+  } catch (error) {
+    console.error("Error purchasing airtime:", error);
+    res.status(500).json({ status: "failed", message: error.message });
+  } 
+
+},
+
+verifycableCustomer: async (req, res) => {
+  try {
+    const {customer_id, service_id } = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+
+    if (!customer_id   || !service_id) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+    
+
+
+    const payload = {
+      service_id,
+      customer_id
+    };
+
+    const response = await vtuService.verifycable(payload);
+    
+    if (response.code === "success") {
+     
+      successResponse(res, response.data, "customer verified successful", STATUSCODES.SUCCESS);
+    } else {
+     
+      res.status(400).json({ status: "failed", message: response.message });
+    }
+  } catch (error) {
+    console.error("Error purchasing airtime:", error);
+    res.status(500).json({ status: "failed", message: error.message });
+  } 
+
+},
+
+buyElectricity: async (req, res) => {
+  try {
+    const {request_id, customer_id, variation_id, amount, service_id } = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+
+    if (!request_id || !customer_id || !amount  || !service_id || !variation_id) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ status: "failed", message: "Amount must be a positive number" });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+    //calculate pricing
+    const pricing   = calculateElectricPricing(service_id, amount);
+    const wallet = await Wallet.findOne({ userId });
+
+    if (!wallet) {
+      return res.status(404).json({ status: "failed", message: "Wallet not found" });
+    }
+
+    if (wallet.balance < pricing.sellingPrice) {
+      return res.status(400).json({ status: "failed", message: "Insufficient balance" });
+    }
+
+    wallet.balance -= pricing.sellingPrice;
+
+    wallet.transactions.push({
+      reference: request_id,
+      type: "electricity",
+      network: service_id,
+      phoneOrAccount: customer_id,
+      amount: amount,
+      costPrice: pricing.costPrice,
+      sellingPrice: pricing.sellingPrice,
+      profit: pricing.profit,
+      status: "pending"
+    });
+
+    await wallet.save();
+
+    const payload = {
+      phone,
+      amount,
+      service_id,
+      request_id
+    };
+
+    const response = await vtuService.purchaseElectricity(payload);
+    const transaction = wallet.transactions.find(
+      (t) => t.reference === request_id
+    );
+    //console.log("VTU Airtime Purchase Response:", response);
+
+    if (response.code === "success") {
+      transaction.status = "success";
+      await wallet.save();
+      successResponse(res, response.data, "Airtime purchase successful", STATUSCODES.SUCCESS);
+    } else {
+      wallet.balance += pricing.sellingPrice;
+      transaction.status = "failed";
+
+      await wallet.save();
+      res.status(400).json({ status: "failed", message: response.message });
+    }
+  } catch (error) {
+    console.error("Error purchasing airtime:", error);
+    res.status(500).json({ status: "failed", message: error.message });
+  } 
+
+},
+
+
 
 }
 

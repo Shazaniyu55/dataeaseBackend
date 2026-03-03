@@ -138,7 +138,119 @@ purchaseData: async ( payload) => {
 },
 
 
+verifycustomerElectricity: async ( payload) => {
+  try {
+    const tokenResponse =  await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    const response = await vtuConfig.vtuApi.post(
+      "/api/v2/verify-customer",
+      payload,
+      {
+        headers: {
 
+            Authorization: `Bearer ${token}`,
+        },
+        }
+    );
+    return response.data;
+    }
+    catch (error) {
+        if (error.response) {
+            console.error("VTU Data Purchase Error:", error.response.data);
+            return error.response.data;
+        }
+        throw error;
+    }
+
+
+
+},
+
+
+purchaseElectricity: async ( payload) => {
+  try {
+    const tokenResponse =  await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    const response = await vtuConfig.vtuApi.post(
+      "/api/v2/electricity",
+      payload,
+      {
+        headers: {
+
+            Authorization: `Bearer ${token}`,
+        },
+        }
+    );
+    return response.data;
+    }
+    catch (error) {
+        if (error.response) {
+            console.error("Electricity Purchase Error:", error.response.data);
+            return error.response.data;
+        }
+        throw error;
+    }
+
+
+
+},
+
+verifybetting: async ( payload) => {
+  try {
+    const tokenResponse =  await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    const response = await vtuConfig.vtuApi.post(
+      "/api/v2/verify-customer",
+      payload,
+      {
+        headers: {
+
+            Authorization: `Bearer ${token}`,
+        },
+        }
+    );
+    return response.data;
+    }
+    catch (error) {
+        if (error.response) {
+            console.error("VTU Data Purchase Error:", error.response.data);
+            return error.response.data;
+        }
+        throw error;
+    }
+
+
+
+},
+
+
+verifycable: async ( payload) => {
+  try {
+    const tokenResponse =  await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    const response = await vtuConfig.vtuApi.post(
+      "/api/v2/verify-customer",
+      payload,
+      {
+        headers: {
+
+            Authorization: `Bearer ${token}`,
+        },
+        }
+    );
+    return response.data;
+    }
+    catch (error) {
+        if (error.response) {
+            console.error("VTU Data Purchase Error:", error.response.data);
+            return error.response.data;
+        }
+        throw error;
+    }
+
+
+
+},
 
 }
 

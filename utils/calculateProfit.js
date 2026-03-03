@@ -21,4 +21,45 @@ function calculateAirtimePricing(service, amount) {
   };
 }
 
-module.exports = { calculateAirtimePricing };
+
+function calculateCablePricing(service, amount) {
+  const discountPercent = pricing.cable[service.toLowerCase()];
+
+  if (!discountPercent) {
+    throw new Error("Invalid service type");
+  }
+
+  const discountAmount = (discountPercent / 100) * amount;
+  const costPrice = amount - discountAmount;
+  const sellingPrice = amount; // Sell at face value
+  const profit = sellingPrice - costPrice;
+
+  return {
+    sellingPrice,
+    costPrice,
+    profit,
+    discountPercent
+  };
+}
+
+function calculateElectricPricing(service, amount) {
+  const discountPercent = pricing.electricity[service.toLowerCase()];
+
+  if (!discountPercent) {
+    throw new Error("Invalid service type");
+  }
+
+  const discountAmount = (discountPercent / 100) * amount;
+  const costPrice = amount - discountAmount;
+  const sellingPrice = amount; // Sell at face value
+  const profit = sellingPrice - costPrice;
+
+  return {
+    sellingPrice,
+    costPrice,
+    profit,
+    discountPercent
+  };
+}
+
+module.exports = { calculateAirtimePricing, calculateCablePricing, calculateElectricPricing };

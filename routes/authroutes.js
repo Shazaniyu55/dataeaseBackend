@@ -2,7 +2,8 @@ const express= require("express");
 const authController = require("../controller/usercontroller");
 const {errorHandler} = require("../utils/errorHandle");
 const authMiddleware = require("../middlewares/authMiddleware");
-const uploadManager = require("../config/cloudinary")
+const uploadManager = require("../config/cloudinary");
+const authMiddleWare = require("../middlewares/authMiddleware");
 const authRouter = express.Router();
 
 
@@ -18,6 +19,10 @@ authRouter.post('/profile', authMiddleware, errorHandler(authController.getUser)
 authRouter.post('/buy-airtime', authMiddleware,  errorHandler(authController.buyAirtime));
 authRouter.get('/data-variations', authMiddleware, errorHandler(authController.getDataVariations));
 authRouter.get('/balance', authMiddleware, errorHandler(authController.getUserWalletBalance));
+authRouter.post('/buy-data', authMiddleWare, errorHandler(authController.buyData));
+authRouter.post('/verify-electric', authMiddleWare, errorHandler(authController.verifyelectricCustomer));
+authRouter.post('/verify-betting', authMiddleWare, errorHandler(authController.verifybettingCustomer));
+authRouter.post('/verify-cable', authMiddleWare, errorHandler(authController.verifycableCustomer));
 
 
 
