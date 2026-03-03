@@ -109,8 +109,10 @@ DataVariations: async ( servieId) => {
 
 },
 
-purchaseData: async (token, payload) => {
+purchaseData: async ( payload) => {
   try {
+    const tokenResponse =  await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
     const response = await vtuConfig.vtuApi.post(
       "/api/v2/data",
       payload,

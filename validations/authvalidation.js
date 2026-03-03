@@ -20,4 +20,6 @@ const {z} = require("zod");
       .min(6),
   });
 
+  
+
   module.exports = {registerUserSchema, loginSchema};

@@ -574,7 +574,85 @@ getUserWalletBalance: async (req, res) => {
   } 
 
 
-}
+},
+
+
+buyData: async (req, res) => {
+  try {
+    const {request_id, phone, amount, service_id } = req.body;
+    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+
+    if (!request_id || !phone || !amount || !service_id) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ status: "failed", message: "Amount must be a positive number" });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+    //calculate pricing
+    const pricing   = calculateAirtimePricing(service_id, amount);
+    const wallet = await Wallet.findOne({ userId });
+
+    if (!wallet) {
+      return res.status(404).json({ status: "failed", message: "Wallet not found" });
+    }
+
+    if (wallet.balance < pricing.sellingPrice) {
+      return res.status(400).json({ status: "failed", message: "Insufficient balance" });
+    }
+
+    wallet.balance -= pricing.sellingPrice;
+
+    wallet.transactions.push({
+      reference: request_id,
+      type: "data",
+      network: service_id,
+      phoneOrAccount: phone,
+      amount: amount,
+      costPrice: pricing.costPrice,
+      sellingPrice: pricing.sellingPrice,
+      profit: pricing.profit,
+      status: "pending"
+    });
+
+    await wallet.save();
+
+    const payload = {
+      phone,
+      amount,
+      service_id,
+      request_id
+    };
+
+    const response = await vtuService.purchaseData(payload);
+    const transaction = wallet.transactions.find(
+      (t) => t.reference === request_id
+    );
+    //console.log("VTU Airtime Purchase Response:", response);
+
+    if (response.code === "success") {
+      transaction.status = "success";
+      await wallet.save();
+      successResponse(res, response.data, "Data purchase successful", STATUSCODES.SUCCESS);
+    } else {
+      wallet.balance += pricing.sellingPrice;
+      transaction.status = "failed";
+
+      await wallet.save();
+      res.status(400).json({ status: "failed", message: response.message });
+    }
+  } catch (error) {
+    console.error("Error purchasing airtime:", error);
+    res.status(500).json({ status: "failed", message: error.message });
+  } 
+
+},
 
 }
 
