@@ -10,7 +10,7 @@ const transactionSchema = new mongoose.Schema({
   
   type: {
     type: String,
-    enum: ["airtime", "data", "cable", "electricity", "betting", "other"],
+    enum: ["airtime", "data", "cable", "electricity", "betting", "other", "Wallet Funded"],
     required: true,
   },
   network: { type: String }, // e.g., MTN, Glo, DStv

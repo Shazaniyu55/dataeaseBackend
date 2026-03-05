@@ -38,6 +38,7 @@ class PaystackService {
       }
     );
     const paystackData = response.data.data;
+    //console.log("paystackData:", paystackData)
 
     if (paystackData.status !== "success") {
       throw new Error("Payment not successful");
@@ -65,7 +66,9 @@ class PaystackService {
     }
 
     wallet.transactions.push({
-      type: "other",
+      type: "Wallet Funded",
+      network:"paystack",
+      phoneOrAccount:user.email,
       amount: amountPaid,
       costPrice: amountPaid,
       sellingPrice: amountPaid,
