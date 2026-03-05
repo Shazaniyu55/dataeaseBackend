@@ -52,7 +52,6 @@ const authController = {
             userType: userType
         });
 
-
         if (!user) {
             return res.status(500).json({ message: "User registration failed" });
         }else{
@@ -61,7 +60,18 @@ const authController = {
             email: user.email
           });
 
-          successResponse(res, {token, user}, "User registered successfully. Please check your email for the OTP to verify your account.", STATUSCODES.CREATED);
+           return res.status(201).json({
+      success: true,
+      message:
+        "User registered successfully. Please check your email for OTP.",
+      data: {
+        token,
+        user,
+      },
+    });
+          
+
+          //successResponse(res, {token, user}, "User registered successfully. Please check your email for the OTP to verify your account.", STATUSCODES.CREATED);
 
         }
 
@@ -474,6 +484,10 @@ buyAirtime: async (req, res) => {
       return res.status(400).json({ status: "failed", message: "Amount must be a positive number" });
     }
 
+    if (amount < 50) {
+  return res.status(400).json({ status: "failed", message: "Minimum amount is ₦50" });
+}
+
     const user = await userService.getUserById(userId);
 
     if (!user) {
@@ -491,19 +505,7 @@ buyAirtime: async (req, res) => {
       return res.status(400).json({ status: "failed", message: "Insufficient balance" });
     }
 
-    wallet.balance -= pricing.sellingPrice;
-
-    wallet.transactions.push({
-      reference: request_id,
-      type: "airtime",
-      network: service_id,
-      phoneOrAccount: phone,
-      amount: amount,
-      costPrice: pricing.costPrice,
-      sellingPrice: pricing.sellingPrice,
-      profit: pricing.profit,
-      status: "pending"
-    });
+   
 
     await wallet.save();
 
@@ -521,7 +523,19 @@ buyAirtime: async (req, res) => {
     //console.log("VTU Airtime Purchase Response:", response);
 
     if (response.code === "success") {
-      transaction.status = "success";
+      // transaction.status = "success";
+      wallet.balance -= pricing.sellingPrice;
+    wallet.transactions.push({
+      reference: request_id,
+      type: "airtime",
+      network: service_id,
+      phoneOrAccount: phone,
+      amount: amount,
+      costPrice: pricing.costPrice,
+      sellingPrice: pricing.sellingPrice,
+      profit: pricing.profit,
+      status: "success"
+    });
       await wallet.save();
       successResponse(res, response.data, "Airtime purchase successful", STATUSCODES.SUCCESS);
     } else {
@@ -847,6 +861,38 @@ buyElectricity: async (req, res) => {
 
 },
 
+getUserTransactions: async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    if (!userId) {
+      return res.status(400).json({ status: "failed", message: "userId is required" });
+    }
+
+    // Check if user exists
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+
+    // Get user's wallet
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res.status(404).json({ status: "failed", message: "Wallet not found" });
+    }
+
+    // Return the transactions
+    return res.status(200).json({
+      status: "success",
+      message: "User transactions retrieved successfully",
+      data: wallet.transactions || [],
+    });
+
+  } catch (error) {
+    console.error("Error fetching user transactions:", error);
+    return res.status(500).json({ status: "failed", message: "Internal server error" });
+  }
+}
 
 
 }

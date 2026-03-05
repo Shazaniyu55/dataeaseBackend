@@ -8,6 +8,7 @@ const authRouter = express.Router();
 
 
 
+
 authRouter.post('/register',uploadManager("profilePic").single("profilePic"), errorHandler(authController.register));
 authRouter.post('/verify-otp',authMiddleware, errorHandler(authController.verifyOtp));
 authRouter.post('/login', errorHandler(authController.login));
@@ -23,7 +24,7 @@ authRouter.post('/buy-data', authMiddleWare, errorHandler(authController.buyData
 authRouter.post('/verify-electric', authMiddleWare, errorHandler(authController.verifyelectricCustomer));
 authRouter.post('/verify-betting', authMiddleWare, errorHandler(authController.verifybettingCustomer));
 authRouter.post('/verify-cable', authMiddleWare, errorHandler(authController.verifycableCustomer));
-
+authRouter.get('/get-transactions', authMiddleWare, errorHandler(authController.getUserTransactions))
 
 
 module.exports = authRouter;
