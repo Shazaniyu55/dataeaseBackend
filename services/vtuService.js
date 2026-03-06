@@ -169,6 +169,35 @@ purchaseData: async ( payload) => {
 },
 
 
+purchasecable: async ( payload) => {
+  try {
+    const tokenResponse =  await vtuService.generateAccessToken();
+    const token = tokenResponse.token;
+    const response = await vtuConfig.vtuApi.post(
+      "/api/v2/tv",
+      payload,
+      {
+        headers: {
+
+            Authorization: `Bearer ${token}`,
+        },
+        }
+    );
+    return response.data;
+    }
+    catch (error) {
+        if (error.response) {
+            //console.error("VTU Data Purchase Error:", error.response.data);
+            return error.response.data;
+        }
+        throw error;
+    }
+
+
+
+},
+
+
 verifycustomerElectricity: async ( payload) => {
   try {
     const tokenResponse =  await vtuService.generateAccessToken();

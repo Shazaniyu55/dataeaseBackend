@@ -12,7 +12,7 @@ const {sendForgotPasswordEmail} = require("../utils/emailserivce")
 const crypto = require("crypto");
 const dotenv = require("dotenv");
 const vtuService = require("../services/vtuService");
-const {calculateAirtimePricing, calculateElectricPricing, calculateDataPricing} =  require("../utils/calculateProfit");
+const {calculateAirtimePricing, calculateElectricPricing,calculateCablePricing, calculateDataPricing} =  require("../utils/calculateProfit");
 const Wallet = require("../model/walletmodel");
 
 dotenv.config();
@@ -710,6 +710,108 @@ buyData: async (req, res) => {
 
   } catch (error) {
     console.error("Error purchasing data:", error);
+    return res.status(500).json({ status: "failed", message: error.message || "Internal server error" });
+  }
+},
+
+buyCable: async (req, res) => {
+  try {
+    const { request_id, customer_id, variation_id, amount, service_id } = req.body;
+    const userId = req.user.userId;
+
+    // -------------------------------
+    // 1. Validation
+    // -------------------------------
+    if (!request_id || !customer_id || !amount || !service_id) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
+    }
+
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ status: "failed", message: "Amount must be a positive number" });
+    }
+
+    // -------------------------------
+    // 2. Fetch user
+    // -------------------------------
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ status: "failed", message: "User not found" });
+    }
+
+    // -------------------------------
+    // 3. Fetch wallet
+    // -------------------------------
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res.status(404).json({ status: "failed", message: "Wallet not found" });
+    }
+
+    // -------------------------------
+    // 4. Calculate pricing
+    // -------------------------------
+    let pricing;
+    try {
+      pricing = calculateCablePricing(service_id.toLowerCase(), numericAmount);
+    } catch (err) {
+      return res.status(400).json({ status: "failed", message: err.message });
+    }
+
+    // -------------------------------
+    // 5. Check wallet balance
+    // -------------------------------
+    if (wallet.balance < pricing.sellingPrice) {
+      return res.status(400).json({ status: "failed", message: "Insufficient balance" });
+    }
+
+    // -------------------------------
+    // 6. Deduct wallet and create pending transaction
+    // -------------------------------
+    wallet.balance -= pricing.sellingPrice;
+    wallet.transactions.push({
+      reference: request_id,
+      type: "cable",
+      network: service_id.toLowerCase(),
+      phoneOrAccount: phone,
+      amount: numericAmount,
+      costPrice: pricing.costPrice,
+      sellingPrice: pricing.sellingPrice,
+      profit: pricing.profit,
+      status: "pending",
+    });
+
+    await wallet.save();
+
+    // -------------------------------
+    // 7. Call VTU API
+    // -------------------------------
+    const payload = { request_id, phone, amount: numericAmount, service_id: service_id.toLowerCase() };
+    const response = await vtuService.purchasecable(payload);
+
+    const transaction = wallet.transactions.find(t => t.reference === request_id);
+
+    if (!transaction) {
+      throw new Error("Transaction not found after creation");
+    }
+
+    // -------------------------------
+    // 8. Handle VTU response
+    // -------------------------------
+    if (response.code === "success") {
+      transaction.status = "success";
+      await wallet.save();
+      return successResponse(res, response.data, "Cable purchase successful", STATUSCODES.SUCCESS);
+    } else {
+      // Rollback wallet balance if VTU fails
+      wallet.balance += pricing.sellingPrice;
+      transaction.status = "failed";
+      await wallet.save();
+
+      return res.status(400).json({ status: "failed", message: response.message || "VTU purchase failed" });
+    }
+
+  } catch (error) {
+    console.error("Error purchasing cable:", error);
     return res.status(500).json({ status: "failed", message: error.message || "Internal server error" });
   }
 },
