@@ -12,7 +12,7 @@ const {sendForgotPasswordEmail} = require("../utils/emailserivce")
 const crypto = require("crypto");
 const dotenv = require("dotenv");
 const vtuService = require("../services/vtuService");
-const {calculateAirtimePricing, calculateElectricPricing} =  require("../utils/calculateProfit");
+const {calculateAirtimePricing, calculateElectricPricing, calculateDataPricing} =  require("../utils/calculateProfit");
 const Wallet = require("../model/walletmodel");
 
 dotenv.config();
@@ -558,7 +558,7 @@ getDataVariations: async (req, res) => {
     const { service_id } = req.query;
 
     const response = await vtuService.DataVariations(service_id);
-    console.log("VTU Data Variations Response:", response);
+    //console.log("VTU Data Variations Response:", response);
 
     if (response.code === "success") {
       successResponse(res, response.data, "Data variations retrieved successfully", STATUSCODES.SUCCESS);
@@ -593,79 +593,104 @@ getUserWalletBalance: async (req, res) => {
 
 buyData: async (req, res) => {
   try {
-    const {request_id, phone, amount, service_id } = req.body;
-    const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
+    const { request_id, phone, amount, service_id } = req.body;
+    const userId = req.user.userId;
 
+    // -------------------------------
+    // 1. Validation
+    // -------------------------------
     if (!request_id || !phone || !amount || !service_id) {
       return res.status(400).json({ status: "failed", message: "All fields are required" });
     }
 
-    if (isNaN(amount) || amount <= 0) {
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
       return res.status(400).json({ status: "failed", message: "Amount must be a positive number" });
     }
 
+    // -------------------------------
+    // 2. Fetch user
+    // -------------------------------
     const user = await userService.getUserById(userId);
-
     if (!user) {
       return res.status(404).json({ status: "failed", message: "User not found" });
     }
-    //calculate pricing
-    const pricing   = calculateAirtimePricing(service_id, amount);
-    const wallet = await Wallet.findOne({ userId });
 
+    // -------------------------------
+    // 3. Fetch wallet
+    // -------------------------------
+    const wallet = await Wallet.findOne({ userId });
     if (!wallet) {
       return res.status(404).json({ status: "failed", message: "Wallet not found" });
     }
 
+    // -------------------------------
+    // 4. Calculate pricing
+    // -------------------------------
+    let pricing;
+    try {
+      pricing = calculateDataPricing(service_id.toLowerCase(), numericAmount);
+    } catch (err) {
+      return res.status(400).json({ status: "failed", message: err.message });
+    }
+
+    // -------------------------------
+    // 5. Check wallet balance
+    // -------------------------------
     if (wallet.balance < pricing.sellingPrice) {
       return res.status(400).json({ status: "failed", message: "Insufficient balance" });
     }
 
+    // -------------------------------
+    // 6. Deduct wallet and create pending transaction
+    // -------------------------------
     wallet.balance -= pricing.sellingPrice;
-
     wallet.transactions.push({
       reference: request_id,
       type: "data",
-      network: service_id,
+      network: service_id.toLowerCase(),
       phoneOrAccount: phone,
-      amount: amount,
+      amount: numericAmount,
       costPrice: pricing.costPrice,
       sellingPrice: pricing.sellingPrice,
       profit: pricing.profit,
-      status: "pending"
+      status: "pending",
     });
 
     await wallet.save();
 
-    const payload = {
-      phone,
-      amount,
-      service_id,
-      request_id
-    };
-
+    // -------------------------------
+    // 7. Call VTU API
+    // -------------------------------
+    const payload = { request_id, phone, amount: numericAmount, service_id: service_id.toLowerCase() };
     const response = await vtuService.purchaseData(payload);
-    const transaction = wallet.transactions.find(
-      (t) => t.reference === request_id
-    );
-    //console.log("VTU Airtime Purchase Response:", response);
 
+    const transaction = wallet.transactions.find(t => t.reference === request_id);
+
+    if (!transaction) {
+      throw new Error("Transaction not found after creation");
+    }
+
+    // -------------------------------
+    // 8. Handle VTU response
+    // -------------------------------
     if (response.code === "success") {
       transaction.status = "success";
       await wallet.save();
-      successResponse(res, response.data, "Data purchase successful", STATUSCODES.SUCCESS);
+      return successResponse(res, response.data, "Data purchase successful", STATUSCODES.SUCCESS);
     } else {
+      // Rollback wallet balance if VTU fails
       wallet.balance += pricing.sellingPrice;
       transaction.status = "failed";
-
       await wallet.save();
-      res.status(400).json({ status: "failed", message: response.message });
-    }
-  } catch (error) {
-    console.error("Error purchasing airtime:", error);
-    res.status(500).json({ status: "failed", message: error.message });
-  } 
 
+      return res.status(400).json({ status: "failed", message: response.message || "VTU purchase failed" });
+    }
+
+  } catch (error) {
+    console.error("Error purchasing data:", error);
+    return res.status(500).json({ status: "failed", message: error.message || "Internal server error" });
+  }
 },
 
 
