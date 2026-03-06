@@ -234,7 +234,7 @@ const authController = {
   try {
     const { amount, bankName, senderName, narration } = req.body;
     const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware
-    console.log("User ID from auth middleware:", userId);
+    //console.log("User ID from auth middleware:", userId);
 
     const funding = await fundingService.createFundingRequest({
       userId: req.user.userId, // from auth middleware
@@ -380,7 +380,7 @@ signupAffiliates: async (req, res) => {
          successResponse(res, { referralToken }, "Referral token generated successfully", STATUSCODES.SUCCESS);
          
     } catch (error) {
-        console.error('Error generating referral token:', error);
+        //console.error('Error generating referral token:', error);
         res.status(500).json({ status: 'Failed', message: error.message });
     }
 },
@@ -413,7 +413,7 @@ signupAffiliates: async (req, res) => {
 
 
     } catch (error) {
-        console.error("Error sending password reset email:", error);
+        //console.error("Error sending password reset email:", error);
         res.status(500).json({ status: "Failed", message: error.message });
     }
 },
@@ -444,7 +444,7 @@ signupAffiliates: async (req, res) => {
         successResponse(res, null, "Password reset successful. You can now log in with your new password.", STATUSCODES.SUCCESS); 
 
     } catch (error) {
-        console.error("Error resetting password:", error);
+        //console.error("Error resetting password:", error);
         res.status(500).json({ status: "Failed", message: error.message });
     }
 },
@@ -546,7 +546,7 @@ buyAirtime: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error purchasing airtime:", error);
+    //console.error("Error purchasing airtime:", error);
     res.status(500).json({ status: "failed", message: error.message });
   } 
 
@@ -566,7 +566,7 @@ getDataVariations: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error retrieving data variations:", error);
+    //console.error("Error retrieving data variations:", error);
     res.status(500).json({ status: "failed", message: error.message });
   }
 
@@ -585,7 +585,7 @@ getCableVariations: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error retrieving data variations:", error);
+    //console.error("Error retrieving data variations:", error);
     res.status(500).json({ status: "failed", message: error.message });
   }
 
@@ -602,14 +602,12 @@ getUserWalletBalance: async (req, res) => {
 
     successResponse(res, { balance: wallet.balance }, "Wallet balance retrieved successfully", STATUSCODES.SUCCESS);
   } catch (error) {
-    console.error("Error retrieving wallet balance:", error);
+    //console.error("Error retrieving wallet balance:", error);
     res.status(500).json({ status: "failed", message: error.message });
   } 
 
 
 },
-
-
 
 
 buyData: async (req, res) => {
@@ -709,7 +707,7 @@ buyData: async (req, res) => {
     }
 
   } catch (error) {
-    console.error("Error purchasing data:", error);
+    //console.error("Error purchasing data:", error);
     return res.status(500).json({ status: "failed", message: error.message || "Internal server error" });
   }
 },
@@ -811,7 +809,7 @@ buyCable: async (req, res) => {
     }
 
   } catch (error) {
-    console.error("Error purchasing cable:", error);
+    //console.error("Error purchasing cable:", error);
     return res.status(500).json({ status: "failed", message: error.message || "Internal server error" });
   }
 },
@@ -850,7 +848,7 @@ verifyelectricCustomer: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error purchasing airtime:", error);
+    //console.error("Error purchasing airtime:", error);
     res.status(500).json({ status: "failed", message: error.message });
   } 
 
@@ -888,7 +886,7 @@ verifybettingCustomer: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error purchasing airtime:", error);
+    //console.error("Error purchasing airtime:", error);
     res.status(500).json({ status: "failed", message: error.message });
   } 
 
@@ -926,7 +924,7 @@ verifycableCustomer: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error purchasing airtime:", error);
+    //console.error("Error purchasing airtime:", error);
     res.status(500).json({ status: "failed", message: error.message });
   } 
 
@@ -1003,7 +1001,7 @@ buyElectricity: async (req, res) => {
       res.status(400).json({ status: "failed", message: response.message });
     }
   } catch (error) {
-    console.error("Error purchasing airtime:", error);
+    //console.error("Error purchasing airtime:", error);
     res.status(500).json({ status: "failed", message: error.message });
   } 
 
@@ -1037,7 +1035,7 @@ getUserTransactions: async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error fetching user transactions:", error);
+    //console.error("Error fetching user transactions:", error);
     return res.status(500).json({ status: "failed", message: "Internal server error" });
   }
 }
