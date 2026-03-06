@@ -1,63 +1,75 @@
-const webpush = require("web-push");
-const {Notifications } = require("../model/notificationmodel");
-const  Users  = require("../model/usermodel");
+const { Notifications, NotificationType } = require("../model/notificationmodel");
 
-// VAPID keys (generate once and reuse)
-const vapidKeys = {
-  publicKey: "BEfzj6BbPFocDUPZWrAXtasar3hQedZhaL_EqnnhtNnPR2_Bg3fgCCYo78ihZaL4clxXRjWr1N4AIKgcPS1JFbA",
-  privateKey: "03iMak3tvHKZZ-ZIRjsII6eVA4H6OX0F25uiKSNMhx4",
-};
-
-
-
-webpush.setVapidDetails(
-  "mailto:shazaniyu@gmail.com",
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
-
-const NotificationService = {
-  async createNotification(data) {
-    const notification = new Notifications(data);
-    return await notification.save();
-  },
-
-  async sendWebPushNotification(userId, title, body) {
-    const user = await Users.findById(userId);
-    if (!user || !user.pushSubscription) {
-      console.log("User has no web push subscription");
-      return;
-    }
-
-    const payload = JSON.stringify({
-      title,
-      body,
-    });
-
+class NotificationService {
+  // Create Notification
+  static async createNotification(data) {
     try {
-      await webpush.sendNotification(user.pushSubscription, payload);
-      console.log("Web push notification sent.");
-    } catch (err) {
-      console.error("Error sending push notification", err);
+      const notification = await Notifications.create(data);
+      return notification;
+    } catch (error) {
+      throw error;
     }
-  },
+  }
 
-  async sendWebPushToAll(title, body) {
-    const users = await Users.find({
-      pushSubscription: { $exists: true, $ne: null },
+   static  async sendEmailVerificationOnce(userId) {
+
+    const existingNotification = await Notifications.findOne({
+      user: userId,
+      type: NotificationType.EMAIL_VERIFICATION
     });
 
-    const payload = JSON.stringify({ title, body });
-
-    for (const user of users) {
-      try {
-        await webpush.sendNotification(user.pushSubscription, payload);
-      } catch (err) {
-        console.error("Error sending to user", user._id, err);
-      }
+    if (!existingNotification) {
+      await Notifications.create({
+        user: userId,
+        type: NotificationType.EMAIL_VERIFICATION,
+        title: "Verify Your Email",
+        message: "Verify your email now to unlock more DataEase features."
+      });
     }
-  },
+  }
 
-};
+
+
+  // Get user notifications
+  static async getUserNotifications(userId) {
+    try {
+      const notifications = await Notifications.find({ userId })
+        .sort({ createdAt: -1 });
+
+      return notifications;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Mark notification as read
+  static async markAsRead(notificationId) {
+    try {
+      const notification = await Notifications.findByIdAndUpdate(
+        notificationId,
+        { isRead: true },
+        { new: true }
+      );
+
+      return notification;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Mark all notifications as read
+  static async markAllAsRead(userId) {
+    try {
+      await Notifications.updateMany(
+        { user: userId, isRead: false },
+        { isRead: true }
+      );
+
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
 
 module.exports = NotificationService;

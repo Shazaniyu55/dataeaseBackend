@@ -10,6 +10,8 @@ const fundingService = require("../services/fundingService");
 const User= require("../model/usermodel");
 const {sendForgotPasswordEmail} = require("../utils/emailserivce")
 const crypto = require("crypto");
+const NotificationService = require("../services/notificationservice");
+const { NotificationType } = require("../model/notificationmodel");
 const dotenv = require("dotenv");
 const vtuService = require("../services/vtuService");
 const {calculateAirtimePricing, calculateElectricPricing,calculateCablePricing, calculateDataPricing} =  require("../utils/calculateProfit");
@@ -174,6 +176,13 @@ const authController = {
   const isPasswordValid = await comparePasswords(password, user.password);
   if (!isPasswordValid) {
     return res.status(401).json({ status: "failed", message: "Invalid password" });
+  }
+
+    /*
+    SEND NOTIFICATION IF EMAIL NOT VERIFIED
+  */
+  if (!user.isVerified) {
+    await NotificationService.sendEmailVerificationOnce(user._id)
   }
 
   const userResponse = {
@@ -1038,7 +1047,65 @@ getUserTransactions: async (req, res) => {
     //console.error("Error fetching user transactions:", error);
     return res.status(500).json({ status: "failed", message: "Internal server error" });
   }
-}
+},
+
+verifyEmailInapp: async (req, res) => {
+  try {
+    const { email } = req.body;
+    const userId = req.user.userId;
+
+    if (!email) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Email is required",
+      });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        status: "failed",
+        message: "User does not exist",
+      });
+    }
+
+    // Optional: ensure user email matches
+    if (user.email !== email) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Email does not match logged-in user",
+      });
+    }
+
+    // Generate OTP
+    const { otp, otpExpiresAt } = await generateOtp();
+
+    // Send email
+    await sendOtpEmail(email, otp);
+
+    // Save OTP to DB
+    await userService.updateUser(user._id, {
+      $set: {
+        otp: otp,
+        otpExpiresAt: otpExpiresAt,
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "OTP sent to your email",
+    });
+
+  } catch (error) {
+    console.error("verifyEmailInapp error:", error);
+
+    return res.status(500).json({
+      status: "failed",
+      message: "Internal server error",
+    });
+  }
+},
 
 
 }

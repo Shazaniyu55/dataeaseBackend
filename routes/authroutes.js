@@ -28,5 +28,7 @@ authRouter.post('/verify-betting', authMiddleWare, errorHandler(authController.v
 authRouter.post('/verify-cable', authMiddleWare, errorHandler(authController.verifycableCustomer));
 authRouter.get('/get-transactions', authMiddleWare, errorHandler(authController.getUserTransactions))
 
+authRouter.post('/verify-email', authMiddleWare, errorHandler(authController.verifyEmailInapp));
+
 
 module.exports = authRouter;
