@@ -572,6 +572,25 @@ getDataVariations: async (req, res) => {
 
 },
 
+getCableVariations: async (req, res) => {
+  try {
+    const { service_id } = req.query;
+
+    const response = await vtuService.cableVariations(service_id);
+    //console.log("VTU Data Variations Response:", response);
+
+    if (response.code === "success") {
+      successResponse(res, response.data, "Data variations retrieved successfully", STATUSCODES.SUCCESS);
+    } else {
+      res.status(400).json({ status: "failed", message: response.message });
+    }
+  } catch (error) {
+    console.error("Error retrieving data variations:", error);
+    res.status(500).json({ status: "failed", message: error.message });
+  }
+
+},
+
 getUserWalletBalance: async (req, res) => {
   try {
     const userId = req.user.userId; // Assuming user ID is available in req.user from auth middleware

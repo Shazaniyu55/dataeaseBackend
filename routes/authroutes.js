@@ -19,6 +19,8 @@ authRouter.post('/reset-password', errorHandler(authController.resetPassword));
 authRouter.post('/profile', authMiddleware, errorHandler(authController.getUser));
 authRouter.post('/buy-airtime', authMiddleware,  errorHandler(authController.buyAirtime));
 authRouter.get('/data-variations', authMiddleware, errorHandler(authController.getDataVariations));
+authRouter.get('/cable-variations', authMiddleware, errorHandler(authController.getCableVariations));
+
 authRouter.get('/balance', authMiddleware, errorHandler(authController.getUserWalletBalance));
 authRouter.post('/buy-data', authMiddleWare, errorHandler(authController.buyData));
 authRouter.post('/verify-electric', authMiddleWare, errorHandler(authController.verifyelectricCustomer));
