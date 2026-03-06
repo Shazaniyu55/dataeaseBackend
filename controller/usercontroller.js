@@ -24,7 +24,7 @@ const authController = {
   register: async (req, res)=>{
         const {fullName, email, password, phoneNumber, userType} = req.body;
 
-        const profilePic = req.file ? req.file.path : "https://res.cloudinary.com/damufjozr/image/upload/v1772819764/avatar_xfq6ok.png"
+        const profilePic = req.file ? req.file.path : "https://res.cloudinary.com/damufjozr/image/upload/v1772821224/local_zdol1j.png"
 
         const result = registerUserSchema.safeParse(req.body);
         if (!result.success) {
