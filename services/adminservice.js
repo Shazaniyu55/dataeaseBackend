@@ -56,9 +56,21 @@ const adminService = {
     return await User.find().select("-password");
   },
 
-  async getUserById(userId) {
-    return await User.findById(userId).select("-password");
-  },
+  async  getUserById(userId) {
+  const user = await User.findById(userId).select("-password");
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const wallet = await Wallet.findOne({ userId });
+
+  return {
+    ...user.toObject(),
+    walletBalance: wallet ? wallet.balance : 0,
+    transactions: wallet ? wallet.transactions : []
+  };
+},
 
   async blockUser(userId) {
     return await User.findByIdAndUpdate(

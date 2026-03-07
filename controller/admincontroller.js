@@ -218,8 +218,41 @@ getRevenue: async(req, res)=>{
       message: error.message || "Something went wrong",
     });
   }
-}
+},
 
+ getUsersById: async (req, res) => {
+  try {
+    const {id} = req.params
+    // // Optional: Ensure only admin can access
+    // if (!req.user || !req.user.userId) {
+    //   throw new HttpException(401, "Unauthorized access");
+    // }
+
+    const users = await AdminService.getUserById(id);
+
+    if (!users || users.length === 0) {
+      return successResponse(
+        res,
+        [],
+        "No users found",
+        STATUSCODES.SUCCESS
+      );
+    }
+
+    return successResponse(
+      res,
+      users,
+      "Users fetched successfully",
+      STATUSCODES.SUCCESS
+    );
+
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      status: "failed",
+      message: error.message || "Something went wrong",
+    });
+  }
+},
 
 
 

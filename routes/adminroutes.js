@@ -12,5 +12,7 @@ adminRouter.delete('/delete/users/:userId', errorHandler(AdminController.deleteU
 adminRouter.get('/dashboard-stats', errorHandler(AdminController.getDashboard));
 adminRouter.get('/revenue-stats', errorHandler(AdminController.getRevenue));
 
+adminRouter.get('/users/:id', errorHandler(AdminController.getUsersById));
+
 
 module.exports = adminRouter;
