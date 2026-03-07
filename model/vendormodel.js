@@ -1,7 +1,7 @@
 // models/Chat.js
 const mongoose = require("mongoose");
 
-const chatSchema = new mongoose.Schema({
+const vendorSchema = new mongoose.Schema({
   conversationId: {
     type: String,
     required: true,
@@ -34,4 +34,4 @@ const chatSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Chat", chatSchema);
+module.exports = mongoose.model("Vendor", vendorSchema);
