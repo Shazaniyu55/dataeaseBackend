@@ -458,6 +458,62 @@ signupAffiliates: async (req, res) => {
     }
 },
 
+updateUserPassword: async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+    
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        status: "Failed",
+        message: "Old password and new password are required."
+      });
+    }
+
+    const user = await userService.getUserById(userId);
+    //console.log(user)
+
+    if (!user) {
+      return res.status(404).json({
+        status: "Failed",
+        message: "User not found."
+      });
+    }
+
+    // Compare old password
+    const isMatch = await comparePasswords(oldPassword, user.password);
+  
+
+    if (!isMatch) {
+      return res.status(400).json({
+        status: "Failed",
+        message: "Old password is incorrect."
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    const updatePassword = await userService.updateUser(user._id, {
+      password: hashedPassword
+    });
+
+    successResponse(
+      res,
+      updatePassword,
+      "Password reset successful. You can now log in with your new password.",
+      200
+    );
+
+  } catch (error) {
+    res.status(500).json({
+      status: "Failed",
+      message: error.message
+    });
+  }
+},
 getUser: async (req, res) => {
 
   try{

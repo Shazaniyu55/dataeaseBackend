@@ -26,7 +26,7 @@ const userService = {
   },
 
     async getUserById(id) {
-    return await User.findById(id).select("-password");
+    return await User.findById(id).select("+password");
   },
 
       

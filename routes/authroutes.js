@@ -29,6 +29,7 @@ authRouter.post('/verify-cable', authMiddleWare, errorHandler(authController.ver
 authRouter.get('/get-transactions', authMiddleWare, errorHandler(authController.getUserTransactions))
 
 authRouter.post('/verify-email', authMiddleWare, errorHandler(authController.verifyEmailInapp));
+authRouter.post('/update-password', authMiddleware, errorHandler(authController.updateUserPassword));
 
 
 module.exports = authRouter;
