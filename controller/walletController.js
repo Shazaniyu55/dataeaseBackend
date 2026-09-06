@@ -1,0 +1,140 @@
+const PaystackService = require("../services/paystackService");
+
+class WalletController {
+  
+static async fundWallet(req, res) {
+  try {
+    let { amount } = req.body;
+    const user = req.user;
+
+    // Convert string to number
+    amount = Number(amount);
+
+    // Validate number properly
+    if (isNaN(amount)) {
+      return res.status(400).json({
+        message: "Invalid amount format",
+      });
+    }
+
+    if (amount < 100) {
+      return res.status(400).json({
+        message: "Minimum funding is ₦100",
+      });
+    }
+
+    const response = await PaystackService.initializePayment(
+      user,
+      amount
+    );
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      message: error.response?.data || error.message,
+    });
+  }
+}
+
+ 
+
+static async verifyPayment(req, res) {
+  try {
+    const { reference } = req.params;
+    const user = req.user;
+
+    const response = await PaystackService.verifyPayment(reference, user);
+
+    //console.log("response:", response);
+
+    // Find the transaction with this reference
+    const transaction = response.transactions.find(
+      (trx) => trx.reference === reference
+    );
+
+    if (!transaction) {
+      return res.status(404).json({
+        message: "Transaction not found",
+      });
+    }
+
+    if (transaction.status === "success") {
+      return res.status(200).json({
+        message: "Payment verified successfully",
+        data: transaction,
+      });
+    } else {
+      return res.status(400).json({
+        message: "Payment verification failed",
+      });
+    }
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.response?.data || error.message,
+    });
+  }
+}
+
+
+static async verifyAffiliatePayment(req, res) {
+  try {
+    const { reference } = req.params;
+    const user = req.user;
+
+    const response = await PaystackService.verifyAffiliatePay(reference, user);
+
+    //console.log("response:", response);
+
+    // Find the transaction with this reference
+    const transaction = response.transactions.find(
+      (trx) => trx.reference === reference
+    );
+
+    if (!transaction) {
+      return res.status(404).json({
+        message: "Transaction not found",
+      });
+    }
+
+    if (transaction.status === "success") {
+      return res.status(200).json({
+        message: "Payment verified successfully",
+        data: transaction,
+      });
+    } else {
+      return res.status(400).json({
+        message: "Payment verification failed",
+      });
+    }
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.response?.data || error.message,
+    });
+  }
+}
+
+
+  static async getTransactions(req, res) {
+    try {
+      const {userId} = req.body;
+      const transactions = await PaystackService.getAllTransactions(userId);
+      return res.status(200).json({
+        message: "Transactions retrieved successfully",
+        data: transactions,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: error.response?.data || error.message,
+      });
+  }
+
+  }
+
+
+}
+
+module.exports = WalletController;
