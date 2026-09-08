@@ -14,7 +14,7 @@ class PaystackService {
         email: user.email,
         amount: amount * 100, // convert to kobo
         metadata: {
-          userId: user._id,
+          userId: user.userId,
         },
       },
       {
