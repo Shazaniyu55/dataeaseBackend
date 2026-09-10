@@ -3,6 +3,7 @@ const AdminController = require("../controller/admincontroller");
 const {errorHandler} = require("../utils/errorHandle");
 const authMiddleware = require("../middlewares/authMiddleware");
 const adminRouter = express.Router();
+const AppVersionController = require("../controller/appversioncontroller");
 
 
 
@@ -51,5 +52,10 @@ adminRouter.post  ("/blocked-emails",               authMiddleware, errorHandler
 adminRouter.patch ("/blocked-emails/unblock/:id",   authMiddleware, errorHandler(AdminController.unblockEmail));
 adminRouter.delete("/blocked-emails/:id",           authMiddleware, errorHandler(AdminController.deleteBlockedEmail));
 adminRouter.post  ("/blocked-emails/bulk",          authMiddleware, errorHandler(AdminController.bulkBlockDomains));
+
+// ── App Version (force update) ────────────────────────────────────────────────
+adminRouter.get   ("/app-version",             authMiddleware, errorHandler(AppVersionController.getAppVersions));
+adminRouter.post  ("/app-version",             authMiddleware, errorHandler(AppVersionController.setAppVersion));
+adminRouter.delete("/app-version/:platform",   authMiddleware, errorHandler(AppVersionController.deleteAppVersion));
 
 module.exports = adminRouter;
