@@ -18,7 +18,7 @@ module.exports = admin;
 // });
 
 
-module.exports = admin;
+// module.exports = admin;
 
 
 // const admin = require("firebase-admin");
