@@ -11,11 +11,30 @@ const AppVersionController = {
    */
   checkVersion: async (req, res) => {
     try {
-      const platform = String(req.query.platform || "android")
-        .toLowerCase()
-        .trim();
-      // The version the user is currently running. Missing => treat as very old.
-      const currentVersion = String(req.query.version || "0.0.0").trim();
+       // Accept query params OR headers, so a client-side naming slip can't lock users out.
+    const platform = String(
+      req.query.platform || req.get("x-app-platform") || "android"
+    ).toLowerCase().trim();
+    const rawVersion =
+      req.query.version || req.query.currentVersion || req.query.appVersion ||
+      req.get("x-app-version");
+    const currentVersion = String(rawVersion || "").trim();
+
+    // Never let a cached response keep the update screen alive.
+    res.set("Cache-Control", "no-store");
+
+    // Version missing/unparseable → we can't tell, so don't block (was: "0.0.0" = always forced).
+    if (!/^v?\d+(\.\d+)*/i.test(currentVersion)) {
+      return res.status(200).json({
+        success: true, status: 200, message: "No valid version supplied",
+        data: { platform, currentVersion, updateAvailable: false, forceUpdate: false },
+      });
+    }
+      // const platform = String(req.query.platform || "android")
+      //   .toLowerCase()
+      //   .trim();
+      // // The version the user is currently running. Missing => treat as very old.
+      // const currentVersion = String(req.query.version || "0.0.0").trim();
 
       const config = await AppVersion.findOne({ platform });
 

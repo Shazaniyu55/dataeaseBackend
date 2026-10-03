@@ -12,6 +12,7 @@ const {
   calculateCablePricing,
   calculateElectricPricing,
 } = require("../utils/calculateProfit");
+const { getPlanPrice } = require("../utils/vtuCatalog");
 
 dotenv.config();
 
@@ -199,7 +200,11 @@ const vtuPassController = {
         return failResponse(res, STATUSCODES.BAD_REQUEST, "serviceID, phone, variation_code, and amount are required");
       }
 
-      const numericAmount = Number(amount);
+      const realPrice = await getPlanPrice(serviceID, variation_code);
+      if (!realPrice) return failResponse(res, STATUSCODES.BAD_REQUEST, "Invalid plan");
+
+      const numericAmount = realPrice;
+      //const numericAmount = Number(amount);
       if (isNaN(numericAmount) || numericAmount <= 0) {
         return failResponse(res, STATUSCODES.BAD_REQUEST, "Amount must be a positive number");
       }
@@ -289,7 +294,12 @@ const vtuPassController = {
         return failResponse(res, STATUSCODES.BAD_REQUEST, "serviceID, smartcardNumber, variation_code, amount, and phone are required");
       }
 
-      const numericAmount = Number(amount);
+      const realPrice = await getPlanPrice(serviceID, variation_code);
+if (!realPrice) return failResponse(res, STATUSCODES.BAD_REQUEST, "Invalid plan");
+
+const numericAmount = realPrice;   // ignore the client's amount
+
+      //const numericAmount = Number(amount);
       if (isNaN(numericAmount) || numericAmount <= 0) {
         return failResponse(res, STATUSCODES.BAD_REQUEST, "Amount must be a positive number");
       }

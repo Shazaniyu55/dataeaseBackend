@@ -9,6 +9,7 @@ const notifyRouter = require("./notifyroutes");
 const flightRouter = require("./flightroutes")
 const vtuPassRouter = require("./vtuPassroutes");
 const appVersionRouter = require("./appversionroutes");
+const aiRouter = require("./aiagentroutes");
 
 indexRouter.use('/wallet', walletRouter);
 indexRouter.use('/auth', authRouter);
@@ -19,5 +20,6 @@ indexRouter.use('/kyc', kycRouter);
 indexRouter.use('/notify', notifyRouter);
 indexRouter.use('/flight', flightRouter);
 indexRouter.use('/app-version', appVersionRouter);
+indexRouter.use('/ai', aiRouter);
 
 module.exports = indexRouter;
