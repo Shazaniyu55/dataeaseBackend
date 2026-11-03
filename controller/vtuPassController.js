@@ -184,7 +184,10 @@ const vtuPassController = {
       return failResponse(res, STATUSCODES.BAD_REQUEST, result.response_description || "Transaction failed", result);
 
     } catch (error) {
-      console.error("buyAirtime error:", error.response ? error.response.data : error.message);
+      console.error("buyAirtime error:", error.response ? error.response : error.message);
+       console.error("VTpass HTTP error:", err.response?.status);
+  console.error("VTpass body:", JSON.stringify(err.response, null, 2));
+  console.error("Payload sent:", payload);
       return failResponse(res, STATUSCODES.INTERNAL_SERVER_ERROR, "Purchase failed");
     }
   },
