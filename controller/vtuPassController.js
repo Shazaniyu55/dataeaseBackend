@@ -292,19 +292,41 @@ const vtuPassController = {
   // { serviceID, smartcardNumber, variation_code, amount, phone, subscription_type? }
   buyCable: async (req, res) => {
     try {
-      const { serviceID, smartcardNumber, variation_code, amount, phone, subscription_type } = req.body;
+      const { serviceID, smartcardNumber, variation_code } = req.body;
+      let { phone } = req.body;
       const userId = req.user.userId;
 
-      if (!serviceID || !smartcardNumber || !variation_code || !amount || !phone) {
-        return failResponse(res, STATUSCODES.BAD_REQUEST, "serviceID, smartcardNumber, variation_code, amount, and phone are required");
+      // "renew" = pay the customer's current bouquet again (DStv/GOtv only).
+      // "change" = switch to the selected variation_code. Startimes has no renew.
+      const subscription_type =
+        req.body.subscription_type === "renew" && serviceID !== "startimes" ? "renew" : "change";
+
+      if (!serviceID || !smartcardNumber || (subscription_type === "change" && !variation_code)) {
+        return failResponse(res, STATUSCODES.BAD_REQUEST, "serviceID, smartcardNumber and variation_code are required");
       }
 
-      const realPrice = await getPlanPrice(serviceID, variation_code);
-if (!realPrice) return failResponse(res, STATUSCODES.BAD_REQUEST, "Invalid plan");
+      // Fall back to the phone on the user's profile
+      if (!phone) {
+        const user = await User.findById(userId).select("phoneNumber");
+        phone = user?.phoneNumber;
+      }
+      if (!phone) {
+        return failResponse(res, STATUSCODES.BAD_REQUEST, "Add a phone number to your profile to continue");
+      }
 
-const numericAmount = realPrice;   // ignore the client's amount
+      // Price always comes from VTpass, never from the client
+      let numericAmount;
+      if (subscription_type === "renew") {
+        const verify = await vtuPassService.verifyMerchant({ serviceID, billersCode: smartcardNumber });
+        numericAmount = Number(verify.data?.content?.Renewal_Amount);
+        if (!numericAmount) {
+          return failResponse(res, STATUSCODES.BAD_REQUEST, "This smartcard has no renewal amount. Choose a bouquet instead.");
+        }
+      } else {
+        numericAmount = await getPlanPrice(serviceID, variation_code);
+        if (!numericAmount) return failResponse(res, STATUSCODES.BAD_REQUEST, "Invalid plan");
+      }
 
-      //const numericAmount = Number(amount);
       if (isNaN(numericAmount) || numericAmount <= 0) {
         return failResponse(res, STATUSCODES.BAD_REQUEST, "Amount must be a positive number");
       }
@@ -339,10 +361,10 @@ const numericAmount = realPrice;   // ignore the client's amount
         request_id,
         serviceID,
         billersCode: smartcardNumber,
-        variation_code,
         amount: numericAmount,
         phone,
-        subscription_type: subscription_type || "change", // "change" | "renew"
+        ...(subscription_type === "change" && { variation_code }),
+        ...(serviceID !== "startimes" && { subscription_type }),
       };
 
       let response;
