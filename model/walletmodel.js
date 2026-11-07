@@ -27,7 +27,7 @@ const transactionSchema = new mongoose.Schema({
   reference: { type: String, required: true, unique: true, },
   type: {
     type: String,
-    enum: ["airtime", "data", "cable", "electricity", "betting", "other", "Wallet_Funded", "giftcard", "Epins"],
+    enum: ["airtime", "data", "cable", "electricity", "betting", "other", "Wallet_Funded", "giftcard", "Epins", "flight", "hotel"],
     required: true,
   },
   network: { type: String },

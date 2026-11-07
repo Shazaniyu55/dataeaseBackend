@@ -69,6 +69,7 @@ const vtuPassController = {
   // POST /vtu-pass/verify  { serviceID, billersCode, type? }
   // Verify a meter number (electricity) or smartcard/IUC (cable) before charging.
   verifyMerchant: async (req, res) => {
+    
     try {
       const { serviceID, billersCode, type } = req.body;
 
@@ -80,6 +81,7 @@ const vtuPassController = {
       if (type) payload.type = type; // prepaid | postpaid (electricity only)
 
       const response = await vtuPassService.verifyMerchant(payload);
+      //console.log(response)
       const result = response.data;
 
       if (result.code === "000" && !result?.content?.WrongBillersCode && !result?.content?.error) {

@@ -13,5 +13,7 @@ flightRouter.post("/book", killSwitchGuard('vtu'),authMiddleware, errorHandler(D
 
 flightRouter.post("/hotels/search",killSwitchGuard('vtu'),authMiddleware, errorHandler(DuffelController.searchHotel));
 
+flightRouter.post("/hotels/rates", killSwitchGuard('vtu'),authMiddleware, errorHandler(DuffelController.hotelRates));
+flightRouter.post("/hotels/book",  killSwitchGuard('vtu'),authMiddleware, errorHandler(DuffelController.bookHotel));
 
 module.exports = flightRouter;
