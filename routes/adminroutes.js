@@ -1,13 +1,18 @@
 const express= require("express");
+const requireAdmin = require("../middlewares/requireAdmin");
+const { rateLimit } = require("express-rate-limit");
+
 const AdminController = require("../controller/admincontroller");
 const {errorHandler} = require("../utils/errorHandle");
 const authMiddleware = require("../middlewares/authMiddleware");
 const adminRouter = express.Router();
 const AppVersionController = require("../controller/appversioncontroller");
 
+// Brute-force protection on admin login: 10 attempts per 15 min per IP
+const adminLoginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false });
 
 
-adminRouter.post('/login', errorHandler(AdminController.loginAdmin));
+adminRouter.post('/login',adminLoginLimiter, errorHandler(AdminController.loginAdmin));
 adminRouter.get('/users',authMiddleware, errorHandler(AdminController.getAllUsers));
 adminRouter.delete('/delete/users/:userId',authMiddleware, errorHandler(AdminController.deleteUsers));
 adminRouter.get('/dashboard-stats',authMiddleware, errorHandler(AdminController.getDashboard));
@@ -24,7 +29,7 @@ adminRouter.patch('/funding-request/approve/:id',authMiddleware, errorHandler(Ad
 
 adminRouter.post('/approve-kyc/:id', authMiddleware, errorHandler(AdminController.approveKyc));
 adminRouter.get('/get-all-kyc', authMiddleware, errorHandler(AdminController.getAllKyc));
-adminRouter.post('/register-subadmin', errorHandler(AdminController.createSubAdmin));
+adminRouter.post('/register-subadmin',authMiddleware, requireAdmin, errorHandler(AdminController.createSubAdmin));
 adminRouter.delete('/decline-kyc/:id', authMiddleware, errorHandler(AdminController.declineKyc));
 adminRouter.get('/get-resell-kyc', authMiddleware, errorHandler(AdminController.getAllResellerKyc));
 adminRouter.post('/send-push-user/:userId', authMiddleware, errorHandler(AdminController.sendPushNotificationToUser));

@@ -70,6 +70,7 @@ const authMiddleware = async (req, res, next) => {
 
   // All checks passed
   req.user = decoded;
+  req.isAdmin = isAdmin;
   next();
 };
 

@@ -6,6 +6,8 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const rateLimit = require("express-rate-limit");
 const {killSwitchGuard} = require("../middlewares/killswitchmiddleware");
 const authRouter = express.Router();
+const { manualFundingLimiter } = require("../middlewares/walletRateLimit");
+
 
  const purchaseLimiter = rateLimit({
   windowMs: 10 * 1000,       // 10 seconds
@@ -22,7 +24,8 @@ authRouter.post('/verify-login-otp', killSwitchGuard('login'), errorHandler(auth
 authRouter.post('/enable-mfa', authMiddleware, errorHandler(authController.enableMfa));
 authRouter.post('/disable-mfa', authMiddleware, errorHandler(authController.disableMfa));
 authRouter.get('/mfa-status', authMiddleware, errorHandler(authController.getMfaStatus));
-authRouter.post('/fund-wallet',killSwitchGuard('wallet'), authMiddleware, errorHandler(authController.fundWalletManual));
+authRouter.post('/fund-wallet',killSwitchGuard('wallet'), authMiddleware, manualFundingLimiter, errorHandler(authController.fundWalletManual));
+// authRouter.post('/fund-wallet',killSwitchGuard('wallet'), authMiddleware, errorHandler(authController.fundWalletManual));
 authRouter.post('/request-password-reset', errorHandler(authController.requestPasswordReset));
 authRouter.post('/reset-password', errorHandler(authController.resetPassword));
 authRouter.post('/profile', authMiddleware, errorHandler(authController.getUser));

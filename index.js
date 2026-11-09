@@ -17,8 +17,11 @@ const Logger = require('./middlewares/log');
 const ipBlockMiddleware = require("./middlewares/Ipblockmiddleware");
 const path = require('path');
 const { killSwitchGuard } = require("./middlewares/killswitchmiddleware");
-const crypto = require('crypto');
-const Wallet = require('./model/walletmodel');
+// const crypto = require('crypto');
+// const Wallet = require('./model/walletmodel');
+
+const { creditFromPaystack, isValidPaystackSignature } = require('./services/walletFundingService');
+const { webhookLimiter } = require('./middlewares/walletRateLimit');
 
 
 require('dotenv').config();
@@ -51,58 +54,32 @@ app.use(cors(
 app.use(morgan('tiny'));
 app.post(
   '/webhook/paystack',
-  express.raw({ type: '*/*' }),   // gives you req.body as a Buffer
+  webhookLimiter,
+  express.raw({ type: 'application/json', limit: '100kb' }), // req.body as a Buffer
   async (req, res) => {
     const raw = req.body;
 
-    if (!Buffer.isBuffer(raw)) {
-      console.error('Paystack webhook: no raw body', typeof raw);
-      return res.sendStatus(400);
-    }
-
-    const hash = crypto
-      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-      .update(raw)
-      .digest('hex');
-
-    if (hash !== req.headers['x-paystack-signature']) {
+    if (!isValidPaystackSignature(raw, req.headers['x-paystack-signature'])) {
+      console.warn(`Paystack webhook: bad signature from ${req.ip}`);
       return res.sendStatus(401);
     }
 
-    res.sendStatus(200); // ack fast so Paystack doesn't retry
-
     let payload;
     try { payload = JSON.parse(raw.toString('utf8')); }
-    catch { return; }
+    catch { return res.sendStatus(400); }
 
-    const { event, data } = payload;
-    if (event !== 'charge.success') return;
+    res.sendStatus(200); // ack fast so Paystack doesn't retry
+
+    if (payload?.event !== 'charge.success') return;
 
     try {
-      const reference = data.reference;
-      const userId = data.metadata?.userId;
-      const amountPaid = data.amount / 100;
-      if (!userId) return;
-
-      let wallet = await Wallet.findOne({ userId });
-      if (!wallet) wallet = await Wallet.create({ userId, balance: 0, transactions: [] });
-      if (wallet.transactions.some((tx) => tx.reference === reference)) return;
-
-      wallet.transactions.push({
-        type: 'Wallet_Funded',
-        network: 'paystack',
-        phoneOrAccount: data.customer?.email,
-        amount: amountPaid,
-        costPrice: amountPaid,
-        sellingPrice: amountPaid,
-        profit: 0,
-        reference,
-        status: 'success',
-      });
-      wallet.balance += amountPaid;
-      await wallet.save();
+      // Re-verifies with Paystack, checks owner + amount, credits exactly once
+      const result = await creditFromPaystack(payload.data?.reference, null);
+      if (result.status === 'rejected') {
+        console.error(`Paystack webhook rejected ${payload.data?.reference}: ${result.reason}`);
+      }
     } catch (err) {
-      console.error('Paystack webhook error:', err);
+      console.error('Paystack webhook error:', err.response?.data || err.message);
     }
   }
 );
